@@ -22,10 +22,11 @@ func NewClient(conn net.Conn) *Client {
 	}
 }
 
-func (s *Server) addClient(client *Client) {
+func (s *Server) addClient(client *Client) bool {
 	s.clientsMu.Lock()
 	defer s.clientsMu.Unlock()
 	s.clients = append(s.clients, client)
+	return len(s.clients) <= 10
 }
 
 func (s *Server) removeClient(client *Client) {
@@ -139,8 +140,13 @@ _)      \\.___.,|     .'
 	}
 	client.name = name
 
-	s.addClient(client)
+	tt := s.addClient(client)
 	defer s.removeClient(client)
+	if !tt {
+		fmt.Printf("%s limit 10 connection....\n", client.name)
+		s.broadcast(fmt.Sprintf("%s limit 10 connection...", client.name))
+		return
+	}
 
 	fmt.Printf("%s has joined our chat...\n", client.name)
 	s.sendPreviousMessages(client)
